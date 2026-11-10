@@ -1,8 +1,7 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './entities/usuario.entity';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsuariosService {
@@ -12,28 +11,22 @@ export class UsuariosService {
   ) {}
 
   async findAll(): Promise<Usuario[]> {
-    return this.usuarioRepository.find();
+    return await this.usuarioRepository.find();
   }
 
-  async create(createUsuarioDto: any): Promise<Usuario> {
-    const usuarioExistente = await this.usuarioRepository.findOne({
-      where: { email: createUsuarioDto.email },
-    });
+  async create(createUserDto: any): Promise<Usuario> {
+    const novoUsuario = this.usuarioRepository.create(createUserDto);
+    const salvo = await this.usuarioRepository.save(novoUsuario);
+    return Array.isArray(salvo) ? (salvo[0] as Usuario) : (salvo as Usuario);
+  }
 
-    if (usuarioExistente) {
-      throw new BadRequestException('Este e-mail já está cadastrado no sistema.');
-    }
+  async update(id: number, updateUserDto: any): Promise<Usuario> {
+    await this.usuarioRepository.update(id, updateUserDto);
+    const atualizado = await this.usuarioRepository.findOne({ where: { idUsuario: id } as any });
+    return atualizado!;
+  }
 
-    const hashedPassword = await bcrypt.hash(createUsuarioDto.senha, 10);
-    const perfilFormatado = (createUsuarioDto.perfil || 'COLABORADOR').toUpperCase();
-
-    const novoUsuario = this.usuarioRepository.create({
-      nome: createUsuarioDto.nome,
-      email: createUsuarioDto.email,
-      senha: hashedPassword,
-      perfil: perfilFormatado,
-    });
-
-    return this.usuarioRepository.save(novoUsuario);
+  async remove(id: number): Promise<void> {
+    await this.usuarioRepository.delete(id);
   }
 }

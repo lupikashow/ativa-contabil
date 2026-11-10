@@ -1,19 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Rotina } from '../../rotinas/entities/rotina.entity';
 
 @Entity('empresas')
 export class Empresa {
   @PrimaryGeneratedColumn()
   idEmpresa: number;
 
-  @Column({ nullable: true })
+  @Column()
   nome: string;
 
-  @Column({ unique: true })
+  @Column()
   cnpj: string;
 
   @Column({ nullable: true })
-  regime: string;
+  tipo: string;
 
   @Column({ nullable: true })
   responsavel: string;
+
+  @OneToMany(() => Rotina, (rotina) => rotina.empresa)
+  rotinas: Rotina[];
 }

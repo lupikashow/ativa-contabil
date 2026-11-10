@@ -1,11 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Empresa } from '../../empresas/entities/empresa.entity';
-
-export enum StatusRotina {
-  PENDENTE = 'PENDENTE',
-  EM_ANDAMENTO = 'EM_ANDAMENTO',
-  CONCLUIDO = 'CONCLUIDO',
-}
+import { Usuario } from '../../usuarios/entities/usuario.entity';
 
 @Entity('rotinas')
 export class Rotina {
@@ -13,25 +8,22 @@ export class Rotina {
   idRotina: number;
 
   @Column()
-  nome: string;
+  titulo: string;
 
   @Column({ nullable: true })
   descricao: string;
 
-  @Column({ type: 'date' })
+  @Column()
   dataVencimento: string;
 
-  @Column({
-    type: 'enum',
-    enum: StatusRotina,
-    default: StatusRotina.PENDENTE,
-  })
-  status: StatusRotina;
+  @Column({ default: 'Pendente' })
+  status: string;
 
-  @ManyToOne(() => Empresa, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'idEmpresa' })
+  @ManyToOne(() => Empresa, (empresa) => empresa.rotinas, { eager: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'empresaId' })
   empresa: Empresa;
 
-  @CreateDateColumn()
-  criadoEm: Date;
+  @ManyToOne(() => Usuario, { eager: true, nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'colaboradorId' })
+  colaborador: Usuario;
 }

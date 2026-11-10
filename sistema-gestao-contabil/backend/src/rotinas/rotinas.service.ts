@@ -1,59 +1,71 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Rotina, StatusRotina } from './entities/rotina.entity';
-import { CreateRotinaDto } from './dto/create-rotina.dto';
-import { Empresa } from '../empresas/entities/empresa.entity';
+import { Rotina } from './entities/rotina.entity';
 
 @Injectable()
 export class RotinasService {
   constructor(
     @InjectRepository(Rotina)
-    private rotinasRepository: Repository<Rotina>,
-    @InjectRepository(Empresa)
-    private empresasRepository: Repository<Empresa>,
+    private readonly rotinaRepository: Repository<Rotina>,
   ) {}
 
-  async criar(createRotinaDto: CreateRotinaDto): Promise<Rotina> {
-    const idEmpresaNum = Number(createRotinaDto.idEmpresa);
+  async findAll(): Promise<Rotina[]> {
+    return await this.rotinaRepository.find({
+      relations: {
+        empresa: true,
+        colaborador: true,
+      },
+    } as any);
+  }
 
-    const empresa = await this.empresasRepository.findOne({
-      where: { idEmpresa: idEmpresaNum },
-    });
-
-    if (!empresa) {
-      throw new NotFoundException('Empresa cliente não encontrada.');
-    }
-
-    const rotina = this.rotinasRepository.create({
-      nome: createRotinaDto.nome,
+  async create(createRotinaDto: any): Promise<Rotina> {
+    const dadosParaCriar: any = {
+      titulo: createRotinaDto.titulo,
       descricao: createRotinaDto.descricao,
       dataVencimento: createRotinaDto.dataVencimento,
-      status: createRotinaDto.status || StatusRotina.PENDENTE,
-      empresa,
-    });
+      status: createRotinaDto.status || 'Pendente',
+    };
 
-    return this.rotinasRepository.save(rotina);
-  }
-
-  async listarTodas(): Promise<Rotina[]> {
-    return this.rotinasRepository.find({
-      relations: { empresa: true },
-      order: { idRotina: 'DESC' },
-    });
-  }
-
-  async atualizarStatus(id: number, status: StatusRotina): Promise<Rotina> {
-    const rotina = await this.rotinasRepository.findOne({ 
-      where: { idRotina: id },
-      relations: { empresa: true }
-    });
-    
-    if (!rotina) {
-      throw new NotFoundException('Rotina fiscal não encontrada.');
+    if (createRotinaDto.empresaId) {
+      dadosParaCriar.empresa = { idEmpresa: Number(createRotinaDto.empresaId) };
     }
+
+    if (createRotinaDto.colaboradorId) {
+      dadosParaCriar.colaborador = { idUsuario: Number(createRotinaDto.colaboradorId) };
+    }
+
+    const novaRotina = this.rotinaRepository.create(dadosParaCriar);
+    const salvo = await this.rotinaRepository.save(novaRotina);
+    return Array.isArray(salvo) ? (salvo[0] as Rotina) : (salvo as Rotina);
+  }
+
+  async update(id: number, updateRotinaDto: any): Promise<Rotina> {
+    const dadosParaAtualizar: any = {
+      titulo: updateRotinaDto.titulo,
+      descricao: updateRotinaDto.descricao,
+      dataVencimento: updateRotinaDto.dataVencimento,
+      status: updateRotinaDto.status,
+    };
+
+    if (updateRotinaDto.empresaId) {
+      dadosParaAtualizar.empresa = { idEmpresa: Number(updateRotinaDto.empresaId) };
+    }
+
+    if (updateRotinaDto.colaboradorId) {
+      dadosParaAtualizar.colaborador = { idUsuario: Number(updateRotinaDto.colaboradorId) };
+    }
+
+    await this.rotinaRepository.update(id, dadosParaAtualizar);
+    const rotinaAtualizada = await this.rotinaRepository.findOne({ 
+      where: { idRotina: id } as any, 
+      relations: { empresa: true, colaborador: true } 
+    } as any);
     
-    rotina.status = status;
-    return this.rotinasRepository.save(rotina);
+    return rotinaAtualizada as Rotina;
+  }
+
+  async remove(id: number): Promise<void> {
+    await this.rotinaRepository.delete(id);
   }
 }

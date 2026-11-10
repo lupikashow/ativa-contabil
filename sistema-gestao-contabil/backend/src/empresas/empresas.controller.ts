@@ -1,9 +1,7 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { EmpresasService } from './empresas.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('empresas')
-@UseGuards(JwtAuthGuard)
 export class EmpresasController {
   constructor(private readonly empresasService: EmpresasService) {}
 
@@ -15,5 +13,15 @@ export class EmpresasController {
   @Post()
   async create(@Body() createEmpresaDto: any) {
     return this.empresasService.create(createEmpresaDto);
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() updateEmpresaDto: any) {
+    return this.empresasService.update(Number(id), updateEmpresaDto);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    return this.empresasService.remove(Number(id));
   }
 }
