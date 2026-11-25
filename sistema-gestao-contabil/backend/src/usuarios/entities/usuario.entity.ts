@@ -1,24 +1,27 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-export enum PerfilUsuario {
-  GESTOR = 'GESTOR',
-  COLABORADOR = 'COLABORADOR',
-}
+export type PerfilUsuario = 'GESTOR' | 'COLABORADOR';
 
-@Entity('usuarios')
+@Entity('usuario')
 export class Usuario {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'id_usuario' })
   idUsuario: number;
 
-  @Column()
+  @Column({ type: 'varchar', length: 120, nullable: false })
   nome: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', length: 120, unique: true, nullable: false })
   email: string;
 
-  @Column()
-  senha: string;
+  @Column({ name: 'senha_hash', type: 'varchar', length: 255, nullable: false, select: true })
+  senhaHash: string;
 
-  @Column({ default: PerfilUsuario.COLABORADOR })
-  perfil: string;
+  @Column({ type: 'varchar', length: 30, nullable: false })
+  departamento: string;
+
+  @Column({ name: 'perfil_acesso', type: 'varchar', length: 20, nullable: false })
+  perfilAcesso: string;
+
+  @Column({ type: 'boolean', default: true })
+  ativo: boolean;
 }

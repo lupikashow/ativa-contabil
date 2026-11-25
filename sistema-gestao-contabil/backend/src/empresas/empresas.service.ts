@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Empresa } from './entities/empresa.entity';
@@ -7,23 +7,37 @@ import { Empresa } from './entities/empresa.entity';
 export class EmpresasService {
   constructor(
     @InjectRepository(Empresa)
-    private readonly empresaRepository: Repository<Empresa>,
+    private empresaRepository: Repository<Empresa>,
   ) {}
+
+  async create(createEmpresaDto: any): Promise<Empresa> {
+    const novaEmpresa = this.empresaRepository.create({
+      razaoSocial: createEmpresaDto.nome || createEmpresaDto.razaoSocial,
+      nomeFantasia: createEmpresaDto.nome || createEmpresaDto.nomeFantasia,
+      cnpj: createEmpresaDto.cnpj,
+      regimeTributario: createEmpresaDto.tipo || createEmpresaDto.regimeTributario || 'MEI',
+      ativo: true,
+    });
+    return await this.empresaRepository.save(novaEmpresa);
+  }
 
   async findAll(): Promise<Empresa[]> {
     return await this.empresaRepository.find();
   }
 
-  async create(createEmpresaDto: any): Promise<Empresa> {
-    const novaEmpresa = this.empresaRepository.create(createEmpresaDto);
-    const salvo = await this.empresaRepository.save(novaEmpresa);
-    return Array.isArray(salvo) ? (salvo[0] as Empresa) : (salvo as Empresa);
-  }
-
   async update(id: number, updateEmpresaDto: any): Promise<Empresa> {
-    await this.empresaRepository.update(id, updateEmpresaDto);
-    const atualizada = await this.empresaRepository.findOne({ where: { idEmpresa: id } as any });
-    return atualizada!;
+    await this.empresaRepository.update(id, {
+      razaoSocial: updateEmpresaDto.nome || updateEmpresaDto.razaoSocial,
+      nomeFantasia: updateEmpresaDto.nome || updateEmpresaDto.nomeFantasia,
+      cnpj: updateEmpresaDto.cnpj,
+      regimeTributario: updateEmpresaDto.tipo || updateEmpresaDto.regimeTributario,
+    });
+
+    const empresaAtualizada = await this.empresaRepository.findOneBy({ idEmpresa: id });
+    if (!empresaAtualizada) {
+      throw new NotFoundException(`Empresa com ID ${id} não encontrada.`);
+    }
+    return empresaAtualizada;
   }
 
   async remove(id: number): Promise<void> {

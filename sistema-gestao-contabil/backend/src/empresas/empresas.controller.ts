@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put } from '@nestjs/common';
 import { EmpresasService } from './empresas.service';
+import { CreateEmpresaDto } from './dto/create-empresa.dto';
 
 @Controller('empresas')
 export class EmpresasController {
@@ -11,7 +12,7 @@ export class EmpresasController {
   }
 
   @Post()
-  async create(@Body() createEmpresaDto: any) {
+  async create(@Body() createEmpresaDto: CreateEmpresaDto) {
     return this.empresasService.create(createEmpresaDto);
   }
 

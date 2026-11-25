@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Rotina } from './entities/rotina.entity';
@@ -7,62 +7,71 @@ import { Rotina } from './entities/rotina.entity';
 export class RotinasService {
   constructor(
     @InjectRepository(Rotina)
-    private readonly rotinaRepository: Repository<Rotina>,
+    private rotinaRepository: Repository<Rotina>,
   ) {}
 
-  async findAll(): Promise<Rotina[]> {
-    return await this.rotinaRepository.find({
-      relations: {
-        empresa: true,
-        colaborador: true,
-      },
-    } as any);
+  async create(createRotinaDto: any): Promise<Rotina> {
+    const novaRotina = new Rotina();
+    novaRotina.titulo = createRotinaDto.titulo || createRotinaDto.nome || 'Rotina Fiscal';
+    novaRotina.descricao = createRotinaDto.descricao || '';
+    novaRotina.idEmpresa = createRotinaDto.empresaId ? Number(createRotinaDto.empresaId) : (undefined as any);
+    novaRotina.idResponsavel = createRotinaDto.colaboradorId ? Number(createRotinaDto.colaboradorId) : (undefined as any);
+    novaRotina.competencia = createRotinaDto.competencia || new Date().toISOString().slice(0, 7);
+    novaRotina.dataVencimentoCalculada = createRotinaDto.dataVencimento || createRotinaDto.dataVencimentoCalculada || null;
+    novaRotina.status = createRotinaDto.status || 'Pendente';
+    novaRotina.criadoEm = new Date();
+
+    return await this.rotinaRepository.save(novaRotina);
   }
 
-  async create(createRotinaDto: any): Promise<Rotina> {
-    const dadosParaCriar: any = {
-      titulo: createRotinaDto.titulo,
-      descricao: createRotinaDto.descricao,
-      dataVencimento: createRotinaDto.dataVencimento,
-      status: createRotinaDto.status || 'Pendente',
+  async findAll(idColaborador?: number): Promise<Rotina[]> {
+    const queryOptions: any = {
+      relations: {
+        empresa: true,
+        responsavel: true,
+      },
     };
-
-    if (createRotinaDto.empresaId) {
-      dadosParaCriar.empresa = { idEmpresa: Number(createRotinaDto.empresaId) };
+    if (idColaborador) {
+      queryOptions.where = { idResponsavel: idColaborador };
     }
-
-    if (createRotinaDto.colaboradorId) {
-      dadosParaCriar.colaborador = { idUsuario: Number(createRotinaDto.colaboradorId) };
-    }
-
-    const novaRotina = this.rotinaRepository.create(dadosParaCriar);
-    const salvo = await this.rotinaRepository.save(novaRotina);
-    return Array.isArray(salvo) ? (salvo[0] as Rotina) : (salvo as Rotina);
+    return await this.rotinaRepository.find(queryOptions);
   }
 
   async update(id: number, updateRotinaDto: any): Promise<Rotina> {
-    const dadosParaAtualizar: any = {
-      titulo: updateRotinaDto.titulo,
+    await this.rotinaRepository.update(id, {
+      titulo: updateRotinaDto.titulo || updateRotinaDto.nome,
       descricao: updateRotinaDto.descricao,
-      dataVencimento: updateRotinaDto.dataVencimento,
+      idEmpresa: updateRotinaDto.empresaId ? Number(updateRotinaDto.empresaId) : undefined,
+      idResponsavel: updateRotinaDto.colaboradorId ? Number(updateRotinaDto.colaboradorId) : undefined,
+      competencia: updateRotinaDto.competencia,
+      dataVencimentoCalculada: updateRotinaDto.dataVencimento || updateRotinaDto.dataVencimentoCalculada,
       status: updateRotinaDto.status,
-    };
+    });
 
-    if (updateRotinaDto.empresaId) {
-      dadosParaAtualizar.empresa = { idEmpresa: Number(updateRotinaDto.empresaId) };
+    const rotinaAtualizada = await this.rotinaRepository.findOne({
+      where: { idRotina: id },
+      relations: {
+        empresa: true,
+        responsavel: true,
+      },
+    });
+
+    if (!rotinaAtualizada) {
+      throw new NotFoundException(`Rotina com ID ${id} não encontrada.`);
     }
+    return rotinaAtualizada;
+  }
 
-    if (updateRotinaDto.colaboradorId) {
-      dadosParaAtualizar.colaborador = { idUsuario: Number(updateRotinaDto.colaboradorId) };
+  async atualizarStatus(id: number, status: string): Promise<Rotina> {
+    const rotina = await this.rotinaRepository.findOneBy({ idRotina: id });
+    if (!rotina) {
+      throw new NotFoundException('Rotina não encontrada.');
     }
-
-    await this.rotinaRepository.update(id, dadosParaAtualizar);
-    const rotinaAtualizada = await this.rotinaRepository.findOne({ 
-      where: { idRotina: id } as any, 
-      relations: { empresa: true, colaborador: true } 
-    } as any);
-    
-    return rotinaAtualizada as Rotina;
+    rotina.status = status;
+    if (status === 'Concluída') {
+      rotina.dataConclusao = new Date();
+    }
+    return await this.rotinaRepository.save(rotina);
   }
 
   async remove(id: number): Promise<void> {

@@ -1,17 +1,17 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
-import { PerfilUsuario } from '../entities/usuario.entity';
+import { IsString, IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
+import type { PerfilUsuario } from '../entities/usuario.entity';
 
 export class CreateUsuarioDto {
-  @IsNotEmpty({ message: 'O nome é obrigatório' })
+  @IsNotEmpty()
   @IsString()
   nome: string;
 
-  @IsNotEmpty({ message: 'O e-mail é obrigatório' })
-  @IsEmail({}, { message: 'Informe um e-mail válido' })
+  @IsNotEmpty()
+  @IsEmail()
   email: string;
 
-  @IsNotEmpty({ message: 'A senha é obrigatória' })
-  @MinLength(6, { message: 'A senha deve ter pelo menos 6 caracteres' })
+  @IsNotEmpty()
+  @IsString()
   senha: string;
 
   @IsOptional()

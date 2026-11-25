@@ -16,11 +16,11 @@ export const Login: React.FC = () => {
       const response = await fetch('http://localhost:3000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          senha, 
-          tipo: tipoSelecionado 
-        }),
+        body: JSON.stringify({
+          email,
+          senha,
+          tipo: tipoSelecionado
+        })
       });
 
       const data = await response.json();
@@ -29,13 +29,25 @@ export const Login: React.FC = () => {
         throw new Error(data.message || 'E-mail ou senha incorretos.');
       }
 
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('perfil', data.usuario.perfil);
+      const usuario = data.usuario || data.user || {};
+      const idUsuario = usuario.id ?? usuario.idUsuario ?? usuario.id_usuario ?? '';
 
-      if (data.usuario.perfil === 'GESTOR') {
-        navigate('/dashboard');
+      localStorage.setItem('token', data.access_token || data.token || '');
+      localStorage.setItem('perfil', tipoSelecionado);
+      localStorage.setItem('idUsuario', String(idUsuario));
+      localStorage.setItem(
+        'usuario',
+        JSON.stringify({
+          ...usuario,
+          id: idUsuario,
+          perfil: tipoSelecionado
+        })
+      );
+
+      if (tipoSelecionado === 'COLABORADOR') {
+        navigate('/colaborador', { replace: true });
       } else {
-        navigate('/colaborador');
+        navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
       setErro(err.message || 'Falha de conexão com o servidor.');
@@ -56,29 +68,49 @@ export const Login: React.FC = () => {
           <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
             <button
               type="button"
-              onClick={() => { setTipoSelecionado('GESTOR'); setErro(null); }}
+              onClick={() => {
+                setTipoSelecionado('GESTOR');
+                setErro(null);
+              }}
               style={{
-                flex: 1, padding: '10px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer',
+                flex: 1,
+                padding: '10px',
+                borderRadius: '8px',
+                border: 'none',
+                fontWeight: 'bold',
+                cursor: 'pointer',
                 backgroundColor: tipoSelecionado === 'GESTOR' ? '#3b82f6' : '#1e293b',
-                color: tipoSelecionado === 'GESTOR' ? '#ffffff' : '#94a3b8',
+                color: tipoSelecionado === 'GESTOR' ? '#ffffff' : '#94a3b8'
               }}
             >
               👨‍💼 Gestor
             </button>
             <button
               type="button"
-              onClick={() => { setTipoSelecionado('COLABORADOR'); setErro(null); }}
+              onClick={() => {
+                setTipoSelecionado('COLABORADOR');
+                setErro(null);
+              }}
               style={{
-                flex: 1, padding: '10px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer',
+                flex: 1,
+                padding: '10px',
+                borderRadius: '8px',
+                border: 'none',
+                fontWeight: 'bold',
+                cursor: 'pointer',
                 backgroundColor: tipoSelecionado === 'COLABORADOR' ? '#3b82f6' : '#1e293b',
-                color: tipoSelecionado === 'COLABORADOR' ? '#ffffff' : '#94a3b8',
+                color: tipoSelecionado === 'COLABORADOR' ? '#ffffff' : '#94a3b8'
               }}
             >
               👩‍💻 Colaborador
             </button>
           </div>
 
-          {erro && <div style={{ color: '#ef4444', marginBottom: '15px', fontSize: '13px', fontWeight: 'bold' }}>{erro}</div>}
+          {erro && (
+            <div style={{ color: '#ef4444', marginBottom: '15px', fontSize: '13px', fontWeight: 'bold' }}>
+              {erro}
+            </div>
+          )}
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="form-group">
@@ -87,7 +119,7 @@ export const Login: React.FC = () => {
                 type="email"
                 className="form-control"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
@@ -98,17 +130,28 @@ export const Login: React.FC = () => {
                 type="password"
                 className="form-control"
                 value={senha}
-                onChange={e => setSenha(e.target.value)}
+                onChange={(e) => setSenha(e.target.value)}
                 required
               />
             </div>
 
-            <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#3b82f6', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: '#3b82f6',
+                color: '#fff',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
               Entrar como {tipoSelecionado === 'GESTOR' ? 'Gestor' : 'Colaborador'}
             </button>
           </form>
 
-          {/* O link de cadastro de gestor aparece APENAS se o tipo selecionado for GESTOR */}
           {tipoSelecionado === 'GESTOR' && (
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
               <Link to="/cadastro-gestor" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold' }}>
